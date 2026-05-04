@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  steamId         String    @unique
+  steamName       String
+  avatarUrl       String?
+  profileUrl      String?
+  level           Int       @default(0)
+  role            UserRole  @default(USER)
+  currentDinosaur String?
+  isOnline        Boolean   @default(false)
+
+  fossils         Int       @default(0)
+  dna             Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sentRequests     FriendRequest[] @relation("FriendRequestSender")
+  receivedRequests FriendRequest[] @relation("FriendRequestReceiver")
+  friendshipsA     Friendship[]    @relation("FriendshipUserA")
+  friendshipsB     Friendship[]    @relation("FriendshipUserB")
+
+  ownedDinos       StoredDino[]    @relation("StoredDinoOwner")
+  listedDinos      MarketListing[] @relation("MarketSeller")
+  boughtListings   MarketListing[] @relation("MarketBuyer")
+  transactions     CurrencyTransaction[]
+  purchases        DinoPurchase[]
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+
+  sender   User @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA User @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+}
+
+model Changelog {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model ServerStatus {
+  id          String   @id @default(cuid())
+  isOnline    Boolean  @default(false)
+  playerCount Int      @default(0)
+  maxPlayers  Int      @default(0)
+  mapName     String?
+  updatedAt   DateTime @updatedAt
+}
+
+model DinoCatalog {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String   @unique
+  imageUrl     String?
+  dnaCost      Int
+  primeDnaCost Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  purchases    DinoPurchase[]
+}
+
+model DinoPurchase {
+  id          String             @id @default(cuid())
+  userId      String
+  catalogId   String
+  redeemType  DinoRedeemType
+  mutationSet Json?
+  status      DinoPurchaseStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  redeemedAt  DateTime?
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catalog     DinoCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+}
+
+model StoredDino {
+  id             String          @id @default(cuid())
+  ownerId        String
+  species        String
+  storedGrowth   Float
+  redeemGrowth   Float           @default(75)
+  healthPercent  Float
+  staminaPercent Float
+  mutationSet    Json?
+  isListed       Boolean         @default(false)
+  isRedeemed     Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  redeemedAt     DateTime?
+
+  owner          User            @relation("StoredDinoOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  listings       MarketListing[]
+}
+
+model MarketListing {
+  id           String              @id @default(cuid())
+  storedDinoId String
+  sellerId     String
+  buyerId      String?
+  fossilPrice  Int
+  taxAmount    Int
+  status       MarketListingStatus @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  expiresAt    DateTime?
+  soldAt       DateTime?
+
+  storedDino   StoredDino          @relation(fields: [storedDinoId], references: [id], onDelete: Cascade)
+  seller       User                @relation("MarketSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyer        User?               @relation("MarketBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+
+  @@index([storedDinoId])
+}
+model CurrencyTransaction {
+  id        String       @id @default(cuid())
+  userId    String
+  currency  CurrencyType
+  amount    Int
+  reason    String
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum CurrencyType {
+  FOSSILS
+  DNA
+}
+
+enum MarketListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+enum DinoRedeemType {
+  NORMAL
+  PRIME
+}
+
+enum DinoPurchaseStatus {
+  PENDING
+  REDEEMED
+  CANCELLED
+}

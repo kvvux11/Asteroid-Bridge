@@ -1,0 +1,17 @@
+{
+  "name": "asteroid-bridge",
+  "version": "2.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "prisma generate",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  }
+}
