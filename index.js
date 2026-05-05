@@ -16,6 +16,7 @@ const PORT = Number(process.env.PORT || 3000);
 const API_KEY = process.env.BRIDGE_API_KEY || '';
 const syncIntervalMs = Number(process.env.SYNC_INTERVAL_MS || 30000);
 const commandDelayMs = Number(process.env.COMMAND_DELAY_MS || 1000);
+const { handleCommand } = require('./commands');
 
 const app = express();
 app.use(express.json());
@@ -346,6 +347,24 @@ app.post('/redeem', requireApiKey, (req, res) => {
     dino,
     redeemType,
   });
+});
+
+app.post('/api/command', requireApiKey, async (req, res) => {
+  try {
+    const { command, steamId, value } = req.body;
+
+    const result = await handleCommand(command, steamId, value);
+
+    res.json({
+      ok: true,
+      result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      error: error.message,
+    });
+  }
 });
 
 app.post('/slay', requireApiKey, (req, res) => {
