@@ -7,7 +7,7 @@ if (!process.env.RCON_HOST || !process.env.RCON_PORT || !process.env.RCON_PASSWO
   throw new Error('Missing RCON_HOST, RCON_PORT, or RCON_PASSWORD in .env');
 }
 
-async function sendRconCommand(command, timeoutMs = 8000) {
+async function sendRconCommand(command, timeoutMs = 20000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
